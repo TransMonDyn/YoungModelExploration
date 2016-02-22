@@ -1,3 +1,10 @@
+globals[
+  populationWorld
+  nbSettlementsWorld
+  occupiedWorld
+  timeWorld
+]
+
 patches-own
 [
 population
@@ -83,12 +90,11 @@ end
 to run-young-openmole
   setup-young
   reset-timer
-  let txEspaceOccupe (count patches with [population > 0]) / (count patches)
   while [
     (timer < 20)
-    and (txEspaceOccupe < 0.99)
-    and (sum [population] of patches) < 200000
-    ] [ go-young]
+    and (occupiedWorld < 0.99)
+    and (populationWorld < 200000)
+    ] [ go-young-openmole]
 end
 
 to setup-young
@@ -100,6 +106,16 @@ to setup-young
    set shape "person"
  ]
 end
+
+to go-young-openmole
+young-step
+set populationWorld sum [population] of patches
+set nbSettlementsWorld count settlements
+set occupiedWorld (count patches with [population > 0]) / (count patches)
+set timeWorld timer
+tick
+end
+
 
 to go-young
 young-step

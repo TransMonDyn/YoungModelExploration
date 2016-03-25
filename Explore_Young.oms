@@ -1,5 +1,5 @@
 //Env
-val env = LocalEnvironment(4)
+val env = LocalEnvironment(20)
 
 // Inputs
 val seed = Val[Int]

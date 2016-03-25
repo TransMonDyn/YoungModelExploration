@@ -55,14 +55,23 @@ kable(summaryDF)
 ```{r scattermatrix}
 meanDF <- resultsDF %>%
   group_by(probaMove, probaBirth, probaDeath, probaDeathByOvercrowding) %>%
-  summarise_each(funs(mean), initialPopulation:thistime)
-
-plotDF <- resultsDF %>%
+  summarise_each(funs(mean), initialPopulation:thistime) %>%
   rename(mv = probaMove, bth = probaBirth, dth = probaDeath, dby = probaDeathByOvercrowding)
 
-ggplot(plotDF, aes(x = population, occupiedWorld)) +
+plotDF <- resultsDF %>%
+  rename(mv = probaMove, bth = probaBirth, dth = probaDeath, dby = probaDeathByOvercrowding, pop = initialPopulation) %>%
+  filter(bth > (dth + dby), mv > 0)
+
+
+abc <- ggplot(meanDF, aes(x = population, occupiedWorld)) +
   geom_point(alpha = 0.2, size=0.2) +
-  facet_grid(mv + dth ~ bth + dth, labeller = labeller(.rows = label_both, .cols = label_both)) +
+  facet_grid(mv + dth ~ bth + dth, labeller = labeller(.rows = label_both, .cols = label_both))
+
+scatterD3(meanDF$mv, mean)
+
+ggplot(plotDF, aes(x = population, occupiedWorld))+
+  geom_point(alpha = 1, size=0.2) +
+  facet_grid(mv + dby ~ bth + dth + pop, labeller = labeller(.rows = label_both, .cols = label_both)) +
   theme_minimal() +
   theme(strip.text = element_text(size = 9))
 

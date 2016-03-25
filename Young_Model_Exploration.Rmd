@@ -1,0 +1,71 @@
+---
+title: "Young Model Exploration"
+date: "`r Sys.Date()`"
+author: "R. Cura & S. Rey-Coyrehourcq"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+    thumbnails: true
+    lightbox: true
+    gallery: true
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=FALSE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+```
+
+```{r load packages}
+library(readr)
+library(dplyr)
+library(GGally)
+library(tidyr)
+library(ggplot2)
+library(ggthemes)
+```
+
+```{r load data}
+resultsDF <- read_csv("result.csv") %>%
+  mutate_each(funs(as.factor), seed, probaMove, probaBirth, probaDeath, probaDeathByOvercrowding)
+```
+
+```{r summary}
+summaryDF <- resultsDF %>%
+  select(-(seed:probaDeathByOvercrowding))
+
+ summaryDF <- as.data.frame(sapply(summaryDF, summary)) %>%
+  mutate(Stat = row.names(.)) %>%
+  select(Stat, initialPopulation:thistime) %>%
+  tbl_df()
+kable(summaryDF)
+```
+
+```{r scattermatrix}
+meanDF <- resultsDF %>%
+  group_by(probaMove, probaBirth, probaDeath, probaDeathByOvercrowding) %>%
+  summarise_each(funs(mean), initialPopulation:thistime)
+
+plotDF <- resultsDF %>%
+  rename(mv = probaMove, bth = probaBirth, dth = probaDeath, dby = probaDeathByOvercrowding)
+
+ggplot(plotDF, aes(x = population, occupiedWorld)) +
+  geom_point(alpha = 0.2, size=0.2) +
+  facet_grid(mv + dth ~ bth + dth, labeller = labeller(.rows = label_both, .cols = label_both)) +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 9))
+
+
+```
+

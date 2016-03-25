@@ -22,7 +22,7 @@ val thistime = Val[Double]
 // Plan d'experience
 val exploration =
   ExplorationTask(
-  	(seed in (UniformDistribution[Int]() take 2)) x
+  	(seed in (UniformDistribution[Int]() take 100)) x
     (probaMove in List(0.0, 0.33, 0.66, 1.0)) x
     (probaBirth in List(0.0, 0.33, 0.66, 1.0)) x
     (probaDeath in List(0.0, 0.33, 0.66, 1.0)) x

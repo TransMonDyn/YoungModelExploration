@@ -1,0 +1,77 @@
+//Env
+val env = LocalEnvironment(5)
+
+// Inputs
+val seed = Val[Int]
+val probaMove = Val[Double] //[0.0 -> 1.0] step: 0.33
+val probaBirth = Val[Double] //[0.0 -> 1.0] step: 0.33
+val probaDeath = Val[Double] //[0.0 -> 1.0] step: 0.33
+val probaDeathByOvercrowding = Val[Double] //[0.0 -> 1.0] step: 0.33
+val initialPopulation = Val[Double] //[1 -> 100] step: 33
+
+
+// Outputs
+val ticks = Val[Double]
+val population = Val[Double]
+val nbSettlements = Val[Double]
+val occupiedWorld = Val[Double]
+val thistime = Val[Double]
+
+// Commandes
+val cmds = 
+  List(
+    "random-seed ${seed}",
+    "run-young-openmole"
+  )
+
+// NetLogo task
+val youngTask =
+  NetLogo5Task("/iscpif/users/rey/YOUNG/YoungModelExploration/M1_FS-Young.nlogo", cmds, seed = seed) set (
+    outputs += (seed, probaMove, probaBirth, probaDeath, probaDeathByOvercrowding, initialPopulation),
+    netLogoInputs += (probaMove, "proba-move"),
+    netLogoInputs += (probaBirth, "proba-birth"),
+    netLogoInputs += (probaDeath, "proba-death"),
+    netLogoInputs += (probaDeathByOvercrowding, "proba-death-by-overcrowding"),
+    netLogoInputs += (initialPopulation, "Initial-population"),
+    netLogoOutputs += ("ticks", ticks),
+    netLogoOutputs += ("populationWorld", population),
+    netLogoOutputs += ("nbSettlementsWorld", nbSettlements),
+    netLogoOutputs += ("occupiedWorld", occupiedWorld),
+    netLogoOutputs += ("timeWorld", thistime)
+  )
+
+val medPopulationWorld = Val[Double]
+val medNbSettlementsWorld = Val[Double]
+
+val statistic =
+  StatisticTask() set (
+    statistics += (population, medPopulationWorld, median),
+    statistics += (nbSettlements, medNbSettlementsWorld, median)
+  )
+
+val modelCapsule = Capsule(youngTask)
+val statisticCapsule = Capsule(statistic)
+
+val evolution =
+  SteadyStateEvolution(
+    algorithm =   
+      NSGA2(
+        mu = 10,
+        genome = Seq(probaMove in (0.0, 1.0), probaBirth in (0.0, 1.0), probaDeath in (0.0, 1.0), probaDeathByOvercrowding in (0.0, 1.0), initialPopulation in (1.0, 100.0)),
+        objectives = Seq(medPopulationWorld,medNbSettlementsWorld),
+        replication = Replication(seed = seed, statisticCapsule)
+      ),
+    evaluation = modelCapsule,
+    parallelism = 10,
+    termination = 100
+  )
+
+// Export
+val csvHook = AppendToCSVFileHook(workDirectory / "result.csv", seed, probaMove, probaBirth, probaDeath, probaDeathByOvercrowding, initialPopulation, ticks, population, nbSettlements, occupiedWorld, thistime)
+
+// Define a hook to save the Pareto frontier
+val savePopulationHook = SavePopulationHook(evolution, "/iscpif/users/rey/YOUNG/result/")
+
+// Plug everything together to create the workflow
+(evolution hook savePopulationHook) & (modelCapsule on env) 
+

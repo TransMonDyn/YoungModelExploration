@@ -1,5 +1,5 @@
 //Env
-val env = LocalEnvironment(5)
+val env = LocalEnvironment(15)
 
 // Inputs
 val seed = Val[Int]
@@ -40,17 +40,9 @@ val youngTask =
     netLogoOutputs += ("timeWorld", thistime)
   )
 
-val medPopulationWorld = Val[Double]
-val medNbSettlementsWorld = Val[Double]
-
-val statistic =
-  StatisticTask() set (
-    statistics += (population, medPopulationWorld, median),
-    statistics += (nbSettlements, medNbSettlementsWorld, median)
-  )
 
 val modelCapsule = Capsule(youngTask)
-val statisticCapsule = Capsule(statistic)
+
 
 val evolution =
   SteadyStateEvolution(
@@ -58,16 +50,13 @@ val evolution =
       NSGA2(
         mu = 10,
         genome = Seq(probaMove in (0.0, 1.0), probaBirth in (0.0, 1.0), probaDeath in (0.0, 1.0), probaDeathByOvercrowding in (0.0, 1.0), initialPopulation in (1.0, 100.0)),
-        objectives = Seq(medPopulationWorld,medNbSettlementsWorld),
-        replication = Replication(seed = seed, statisticCapsule)
+        objectives = Seq(population,nbSettlements),
+        replication = Replication(seed = seed, aggregation = Seq("_.median", "_.median"))
       ),
     evaluation = modelCapsule,
     parallelism = 10,
     termination = 100
   )
-
-// Export
-val csvHook = AppendToCSVFileHook(workDirectory / "result.csv", seed, probaMove, probaBirth, probaDeath, probaDeathByOvercrowding, initialPopulation, ticks, population, nbSettlements, occupiedWorld, thistime)
 
 // Define a hook to save the Pareto frontier
 val savePopulationHook = SavePopulationHook(evolution, "/iscpif/users/rey/YOUNG/result/")

@@ -17,6 +17,9 @@ val nbSettlements = Val[Double]
 val occupiedWorld = Val[Double]
 val thistime = Val[Double]
 
+val popObj = Val[Double]
+val settlementObj = Val[Double]
+
 // Commandes
 val cmds = 
   List(
@@ -43,24 +46,37 @@ val youngTask =
 
 val modelCapsule = Capsule(youngTask)
 
+val evalModel = 
+  ScalaTask(
+    """
+    |val popObj = 500000.0 - population
+    |val settlementObj = 100000.0 - nbSettlements""".stripMargin
+  ) set (
+    name := "evaluation",
+    inputs += (population,nbSettlements),
+    outputs += (popObj, settlementObj)
+  )
+
+val evaluateModel = youngTask -- evalModel
+
 
 val evolution =
   SteadyStateEvolution(
     algorithm =   
       NSGA2(
-        mu = 10,
+        mu = 100,
         genome = Seq(probaMove in (0.0, 1.0), probaBirth in (0.0, 1.0), probaDeath in (0.0, 1.0), probaDeathByOvercrowding in (0.0, 1.0), initialPopulation in (1.0, 100.0)),
-        objectives = Seq(population,nbSettlements),
+        objectives = Seq(popObj,settlementObj),
         replication = Replication(seed = seed, aggregation = Seq("_.median", "_.median"))
       ),
-    evaluation = modelCapsule,
-    parallelism = 10,
-    termination = 100
+    evaluation = evaluateModel,
+    parallelism = 20,
+    termination = 5 hour
   )
 
 // Define a hook to save the Pareto frontier
 val savePopulationHook = SavePopulationHook(evolution, "/iscpif/users/rey/YOUNG/result/")
 
 // Plug everything together to create the workflow
-(evolution hook savePopulationHook) & (modelCapsule on env) 
+(evolution hook savePopulationHook) & (modelCapsule on env) start
 

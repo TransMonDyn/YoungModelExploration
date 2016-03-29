@@ -49,8 +49,8 @@ val modelCapsule = Capsule(youngTask)
 val evalModel = 
   ScalaTask(
     """
-    |val popObj = 500000.0 - population
-    |val settlementObj = 100000.0 - nbSettlements""".stripMargin
+    |val popObj = 1000000.0 - population
+    |val settlementObj = 1000000.0 - nbSettlements""".stripMargin
   ) set (
     name := "evaluation",
     inputs += (population,nbSettlements),

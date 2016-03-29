@@ -53,8 +53,8 @@ val evalModel =
     |val occupiedObj = 1.0 - occupiedWorld""".stripMargin
   ) set (
     name := "evaluation",
-    inputs += (population,nbSettlements),
-    outputs += (popObj, settlementObj)
+    inputs += (population,occupiedWorld),
+    outputs += (popObj, occupiedObj)
   )
 
 val evaluateModel = youngTask -- evalModel

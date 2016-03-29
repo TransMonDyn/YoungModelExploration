@@ -18,7 +18,7 @@ val occupiedWorld = Val[Double]
 val thistime = Val[Double]
 
 val popObj = Val[Double]
-val settlementObj = Val[Double]
+val occupiedObj = Val[Double]
 
 // Commandes
 val cmds = 
@@ -50,7 +50,7 @@ val evalModel =
   ScalaTask(
     """
     |val popObj = 1000000.0 - population
-    |val settlementObj = 1000000.0 - nbSettlements""".stripMargin
+    |val occupiedObj = 1.0 - occupiedWorld""".stripMargin
   ) set (
     name := "evaluation",
     inputs += (population,nbSettlements),
@@ -66,7 +66,7 @@ val evolution =
       NSGA2(
         mu = 100,
         genome = Seq(probaMove in (0.0, 1.0), probaBirth in (0.0, 1.0), probaDeath in (0.0, 1.0), probaDeathByOvercrowding in (0.0, 1.0), initialPopulation in (1.0, 100.0)),
-        objectives = Seq(popObj,settlementObj),
+        objectives = Seq(popObj,occupiedObj),
         replication = Replication(seed = seed, aggregation = Seq("_.median", "_.median"))
       ),
     evaluation = evaluateModel,

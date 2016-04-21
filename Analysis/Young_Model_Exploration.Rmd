@@ -34,11 +34,11 @@ library(GGally)
 library(tidyr)
 library(ggplot2)
 library(ggthemes)
+library(gridExtra)
 ```
 
 ```{r load data}
-resultsDF <- read_csv("result.csv") %>%
-  mutate_each(funs(as.factor), seed, probaMove, probaBirth, probaDeath, probaDeathByOvercrowding)
+resultsDF <- read_csv("../SimOutputs/plan_complet_result.csv")
 ```
 
 ```{r summary}
@@ -59,15 +59,17 @@ meanDF <- resultsDF %>%
   rename(mv = probaMove, bth = probaBirth, dth = probaDeath, dby = probaDeathByOvercrowding)
 
 plotDF <- resultsDF %>%
-  rename(mv = probaMove, bth = probaBirth, dth = probaDeath, dby = probaDeathByOvercrowding, pop = initialPopulation) %>%
+  rename(mv = probaMove,
+         bth = probaBirth,
+         dth = probaDeath,
+         dby = probaDeathByOvercrowding,
+         pop = initialPopulation) %>%
   filter(bth > (dth + dby), mv > 0)
 
 
 abc <- ggplot(meanDF, aes(x = population, occupiedWorld)) +
   geom_point(alpha = 0.2, size=0.2) +
   facet_grid(mv + dth ~ bth + dth, labeller = labeller(.rows = label_both, .cols = label_both))
-
-scatterD3(meanDF$mv, mean)
 
 ggplot(plotDF, aes(x = population, occupiedWorld))+
   geom_point(alpha = 1, size=0.2) +
@@ -77,4 +79,65 @@ ggplot(plotDF, aes(x = population, occupiedWorld))+
 
 
 ```
+
+
+```{r}
+generations_list <- list.files("../SimOutputs/GenAlgo/", pattern = "*.csv")
+fullDF <- data_frame()
+for (currentGen in generations_list){
+  fullDF <- fullDF %>%
+    bind_rows(read_csv(sprintf("../SimOutputs/GenAlgo/%s", currentGen)))
+}
+
+clusterDF <- data_frame(xmin=numeric(), xmax=numeric(), ymin=numeric(), ymax=numeric(), cluster=character())
+clusterDF[1,] <- c(7.8E5, 8.2E5, 0, 0.75, "A")
+clusterDF[2,] <- c(7E5, 8E5, 0.88, 1, "B")
+clusterDF[3,] <- c(9.9E5, 9.95E5,0.45, 1, "C")
+clusterDF[4,] <- c(9.97E5, 1.01E6,0.9, 1, "D")
+clusterDF <- clusterDF %>%
+  mutate_each(funs(as.numeric), -cluster)
+
+labelDF <- data_frame(x =  numeric(), y = numeric(), cluster = character())
+labelDF[1,] <- c(7.7E5, 0.1, "A")
+labelDF[2,] <- c(7E5, 0.85, "B")
+labelDF[3,] <- c(9.8E5, 0.5, "C")
+labelDF[4,] <- c(10.1E5, 1, "D")
+labelDF <- labelDF %>%
+  mutate_each(funs(as.numeric), -cluster)
+  
+fullDF <- fullDF %>%
+  mutate(cluster = NA) %>%
+  mutate(cluster =  ifelse(popObj >= 7.8E5 & popObj <= 8.2E5 & occupiedObj <= 0.75,
+                     "A",  cluster)) %>%
+  mutate(cluster = ifelse(popObj >= 7E5 & popObj <= 8E5 & occupiedObj >= 0.88 & occupiedObj <= 1,
+                    "B", cluster)) %>%
+  mutate(cluster = ifelse(popObj >= 9.9E5 & popObj <= 9.95E6 & occupiedObj >= 0.45 & occupiedObj <= 1,
+                    "C", cluster)) %>%
+  mutate(cluster = ifelse(popObj >= 9.97E5 & popObj <= 1E6 & occupiedObj >= 0.9 & occupiedObj <= 1,
+                    "D", cluster))
+
+plot_cluster_map <- ggplot() +
+    geom_rect(data = clusterDF,
+              aes(xmin = xmin, xmax =  xmax, ymin= ymin, ymax = ymax,fill = cluster),
+              col= "black", alpha = 0.7) +
+  geom_label(data = labelDF,
+             aes(x = x, y =  y, label = cluster, fill = cluster),
+             colour = "black", fontface = "bold") +
+  geom_point(data = fullDF, aes(x = popObj, y = occupiedObj), size = 0.5, alpha = 1) +
+  guides(fill = FALSE, label = FALSE) +
+  xlab("Population") +
+  ylab("% space  occupied") +
+  scale_y_continuous(labels = scales::percent)
+
+tidyDF <- fullDF %>% gather(key = Param, value = Value, probaMove:probaDeathByOvercrowding)
+
+plot_violin <- ggplot(data = tidyDF, aes(cluster, Value,  fill = cluster)) +
+  geom_violin(alpha = 0.7) +
+  facet_grid(.~Param, scale = "free", space="free") +
+  guides(fill=FALSE)
+
+grid.arrange(plot_cluster_map, plot_violin)
+
+```
+
 

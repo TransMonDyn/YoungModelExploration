@@ -74,7 +74,6 @@ pdf(file = "7-1.pdf", width = 5.31, height = 2)
 ggplot(plotDF, aes(x = population, occupiedWorld))+
   geom_point(alpha = 1, size=0.01) +
   facet_grid(mv ~ dth, labeller = labeller(.rows = label_both, .cols = label_both)) +
-  theme_minimal() +
   theme(strip.text = element_text(size = 4)) +
   theme(axis.text=element_text(size=4)) +
   theme(axis.title=element_text(size=5))
@@ -130,7 +129,6 @@ plot_cluster_map <- ggplot() +
   xlab("Population") +
   ylab("% space  occupied") +
   scale_y_continuous(labels = scales::percent) +
-  theme_minimal() +
   theme(strip.text = element_text(size = 4)) +
   theme(axis.text=element_text(size=4)) +
   theme(axis.title=element_text(size=5))
@@ -143,7 +141,6 @@ plot_violin <- ggplot(data = tidyDF, aes(cluster, Value,  fill = cluster)) +
   geom_violin(alpha = 0.7) +
   facet_grid(.~Param, scale = "free", space="free") +
   guides(fill=FALSE) +
-  theme_minimal() +
   theme(strip.text = element_text(size = 4)) +
   theme(axis.text=element_text(size=4)) +
   theme(axis.title=element_text(size=5))

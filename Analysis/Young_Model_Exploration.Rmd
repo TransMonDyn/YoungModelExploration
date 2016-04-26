@@ -63,20 +63,22 @@ plotDF <- resultsDF %>%
          bth = probaBirth,
          dth = probaDeath,
          dby = probaDeathByOvercrowding,
-         pop = initialPopulation) %>%
-  filter(bth > (dth + dby), mv > 0)
+         pop = initialPopulation)
 
 
 abc <- ggplot(meanDF, aes(x = population, occupiedWorld)) +
   geom_point(alpha = 0.2, size=0.2) +
   facet_grid(mv + dth ~ bth + dth, labeller = labeller(.rows = label_both, .cols = label_both))
 
+pdf(file = "7-1.pdf", width = 5.31, height = 2)
 ggplot(plotDF, aes(x = population, occupiedWorld))+
-  geom_point(alpha = 1, size=0.2) +
-  facet_grid(mv + dby ~ bth + dth + pop, labeller = labeller(.rows = label_both, .cols = label_both)) +
+  geom_point(alpha = 1, size=0.01) +
+  facet_grid(mv ~ dth, labeller = labeller(.rows = label_both, .cols = label_both)) +
   theme_minimal() +
-  theme(strip.text = element_text(size = 9))
-
+  theme(strip.text = element_text(size = 4)) +
+  theme(axis.text=element_text(size=4))
+  
+dev.off()
 
 ```
 
@@ -118,18 +120,19 @@ fullDF <- fullDF %>%
 
 plot_cluster_map <- ggplot() +
     geom_rect(data = clusterDF,
-              aes(xmin = xmin, xmax =  xmax, ymin= ymin, ymax = ymax,fill = cluster),
-              col= "black", alpha = 0.7) +
+              aes(xmin = xmin, xmax =  xmax, ymin= ymin, ymax = ymax,fill = cluster), alpha = 0.4) +
   geom_label(data = labelDF,
-             aes(x = x, y =  y, label = cluster, fill = cluster),
-             colour = "black", fontface = "bold") +
-  geom_point(data = fullDF, aes(x = popObj, y = occupiedObj), size = 0.5, alpha = 1) +
+             aes(x = x, y =  y, label = cluster, fill = cluster, stroke = cluster),
+             colour = "black", fontface = "bold", size=3,  alpha = 0.6) +
+  geom_point(data = fullDF, aes(x = popObj, y = occupiedObj), size = 0.1, alpha = 1) +
   guides(fill = FALSE, label = FALSE) +
   xlab("Population") +
   ylab("% space  occupied") +
   scale_y_continuous(labels = scales::percent)
 
-tidyDF <- fullDF %>% gather(key = Param, value = Value, probaMove:probaDeathByOvercrowding)
+tidyDF <- fullDF %>%
+  gather(key = Param, value = Value, probaMove:probaDeathByOvercrowding) %>%
+  mutate(Param = ifelse(Param == "probaDeathByOvercrowding", "probaDeathBy\nOvercrowding", Param))
 
 plot_violin <- ggplot(data = tidyDF, aes(cluster, Value,  fill = cluster)) +
   geom_violin(alpha = 0.7) +
@@ -137,6 +140,14 @@ plot_violin <- ggplot(data = tidyDF, aes(cluster, Value,  fill = cluster)) +
   guides(fill=FALSE)
 
 grid.arrange(plot_cluster_map, plot_violin)
+
+pdf(file = "7-2.pdf", width = 5.31, height = 2)
+print(plot_cluster_map)
+dev.off()
+
+pdf(file = "7-3.pdf", width = 5.31, height = 2)
+print(plot_violin)
+dev.off()
 
 ```
 

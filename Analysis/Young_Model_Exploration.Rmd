@@ -76,7 +76,8 @@ ggplot(plotDF, aes(x = population, occupiedWorld))+
   facet_grid(mv ~ dth, labeller = labeller(.rows = label_both, .cols = label_both)) +
   theme_minimal() +
   theme(strip.text = element_text(size = 4)) +
-  theme(axis.text=element_text(size=4))
+  theme(axis.text=element_text(size=4)) +
+  theme(axis.title=element_text(size=5))
   
 dev.off()
 
@@ -103,7 +104,7 @@ labelDF <- data_frame(x =  numeric(), y = numeric(), cluster = character())
 labelDF[1,] <- c(7.7E5, 0.1, "A")
 labelDF[2,] <- c(7E5, 0.85, "B")
 labelDF[3,] <- c(9.8E5, 0.5, "C")
-labelDF[4,] <- c(10.1E5, 1, "D")
+labelDF[4,] <- c(10.1E5, 0.95, "D")
 labelDF <- labelDF %>%
   mutate_each(funs(as.numeric), -cluster)
   
@@ -128,7 +129,11 @@ plot_cluster_map <- ggplot() +
   guides(fill = FALSE, label = FALSE) +
   xlab("Population") +
   ylab("% space  occupied") +
-  scale_y_continuous(labels = scales::percent)
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 4)) +
+  theme(axis.text=element_text(size=4)) +
+  theme(axis.title=element_text(size=5))
 
 tidyDF <- fullDF %>%
   gather(key = Param, value = Value, probaMove:probaDeathByOvercrowding) %>%
@@ -137,7 +142,11 @@ tidyDF <- fullDF %>%
 plot_violin <- ggplot(data = tidyDF, aes(cluster, Value,  fill = cluster)) +
   geom_violin(alpha = 0.7) +
   facet_grid(.~Param, scale = "free", space="free") +
-  guides(fill=FALSE)
+  guides(fill=FALSE) +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 4)) +
+  theme(axis.text=element_text(size=4)) +
+  theme(axis.title=element_text(size=5))
 
 grid.arrange(plot_cluster_map, plot_violin)
 

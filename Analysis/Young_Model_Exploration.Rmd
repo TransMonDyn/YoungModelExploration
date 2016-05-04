@@ -69,21 +69,34 @@ plotDF <- resultsDF %>%
 abc <- ggplot(meanDF, aes(x = population, occupiedWorld)) +
   geom_point(alpha = 0.2, size=0.2) +
   facet_grid(mv + dth ~ bth + dth, labeller = labeller(.rows = label_both, .cols = label_both))
-
-pdf(file = "7-1.pdf", width = 5.31, height = 2)
-ggplot(plotDF, aes(x = population, occupiedWorld))+
-  geom_point(alpha = 1, size=0.01) +
-  facet_grid(mv ~ dth, labeller = labeller(.rows = label_both, .cols = label_both)) +
-  theme(strip.text = element_text(size = 4)) +
-  theme(axis.text=element_text(size=4)) +
-  theme(axis.title=element_text(size=5))
-  
-dev.off()
-
+plot(abc)
 ```
 
+```{r plot4_1}
 
-```{r}
+
+plot1DF <- plotDF %>%
+  filter(dth != 0.66, mv ==1) %>%
+  rename(`Proba. de mort` = dth) %>%
+  rename(`Proba. de déplacement` = mv)
+
+
+plot4_1 <-ggplot(plot1DF, aes(x = population, y = occupiedWorld)) +
+  geom_point(alpha = 1, size=0.01) +
+  theme(axis.text=element_text(size=4)) +
+  theme(axis.title=element_text(size=5))+
+  scale_x_continuous(name = "Taille de la population") +
+  scale_y_continuous(name = "Part de l'espace occupé") +
+  facet_grid(`Proba. de déplacement`~`Proba. de mort`,
+             labeller = labeller(.rows = label_both, .cols = label_both)) +
+  theme(strip.text = element_text(size = 4)) +
+  theme(plot.title=element_text(size =16,face="bold", hjust = -0.09,margin=margin(b=-15))) +
+  ggtitle("(1)")
+
+plot(plot4_1)
+```
+
+```{r prepa plot4_2}
 generations_list <- list.files("../SimOutputs/GenAlgo/", pattern = "*.csv")
 fullDF <- data_frame()
 for (currentGen in generations_list){
@@ -118,7 +131,11 @@ fullDF <- fullDF %>%
   mutate(cluster = ifelse(popObj >= 9.97E5 & popObj <= 1E6 & occupiedObj >= 0.9 & occupiedObj <= 1,
                     "D", cluster))
 
-plot_cluster_map <- ggplot() +
+```
+
+```{r plot4_2}
+
+plot4_2 <- ggplot() +
     geom_rect(data = clusterDF,
               aes(xmin = xmin, xmax =  xmax, ymin= ymin, ymax = ymax,fill = cluster), alpha = 0.4) +
   geom_label(data = labelDF,
@@ -131,30 +148,37 @@ plot_cluster_map <- ggplot() +
   scale_y_continuous(labels = scales::percent) +
   theme(strip.text = element_text(size = 4)) +
   theme(axis.text=element_text(size=4)) +
-  theme(axis.title=element_text(size=5))
+  theme(axis.title=element_text(size=5)) + 
+  theme(plot.title=element_text(size =16,face="bold", hjust = -0.09,margin=margin(b=-15))) +
+  ggtitle("(2)")
 
+plot(plot4_2)
+
+```
+
+```{r plot4_3}
 tidyDF <- fullDF %>%
   gather(key = Param, value = Value, probaMove:probaDeathByOvercrowding) %>%
   mutate(Param = ifelse(Param == "probaDeathByOvercrowding", "probaDeathBy\nOvercrowding", Param))
 
-plot_violin <- ggplot(data = tidyDF, aes(cluster, Value,  fill = cluster)) +
+plot4_3 <- ggplot(data = tidyDF, aes(cluster, Value,  fill = cluster)) +
   geom_violin(alpha = 0.7) +
   facet_grid(.~Param, scale = "free", space="free") +
   guides(fill=FALSE) +
   theme(strip.text = element_text(size = 4)) +
   theme(axis.text=element_text(size=4)) +
-  theme(axis.title=element_text(size=5))
+  theme(axis.title=element_text(size=5)) +
+  theme(plot.title=element_text(size =16,face="bold", hjust = -0.09,margin=margin(b=-15))) +
+  ggtitle("(3)")
 
-grid.arrange(plot_cluster_map, plot_violin)
-
-pdf(file = "7-2.pdf", width = 5.31, height = 2)
-print(plot_cluster_map)
-dev.off()
-
-pdf(file = "7-3.pdf", width = 5.31, height = 2)
-print(plot_violin)
-dev.off()
-
+plot(plot4_3)
 ```
 
+```{r allPlots}
+fig4 <- arrangeGrob(plot4_1, plot4_2, plot4_3, ncol = 1)
+ggsave(plot = fig4, filename = "figure4.pdf", width = 5.31, height = 6)
+ggsave(plot = fig4, filename = "figure4.png", width = 5.31, height = 6,  dpi = 300)
+ggsave(plot = fig4, filename = "figure4.tiff", width = 5.31, height = 6,  dpi = 300)
 
+plot(fig4)
+```

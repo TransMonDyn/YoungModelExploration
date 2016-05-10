@@ -82,7 +82,7 @@ plot1DF <- plotDF %>%
 
 
 plot4_1 <-ggplot(plot1DF, aes(x = population, y = occupiedWorld)) +
-  geom_jitter(alpha = 1, size=0.01, height=0.01, width=10000) +
+  geom_point(alpha = 1, size=0.01) +
   theme(axis.text=element_text(size=4)) +
   theme(axis.title=element_text(size=5))+
   scale_x_continuous(name = "Taille de la population") +
@@ -104,32 +104,36 @@ for (currentGen in generations_list){
     bind_rows(read_csv(sprintf("../SimOutputs/GenAlgo/%s", currentGen)))
 }
 
+corrFullDF <- fullDF %>%
+  mutate(popObj = 1E6 - popObj) %>%
+  mutate(occupiedObj = 1 - occupiedObj)
+
+labelDF <- data_frame(x =  numeric(), y = numeric(), cluster = character())
+labelDF[1,] <- c(2.2E5, 1, "A")
+labelDF[2,] <- c(0.4E5, 1, "B")
+labelDF[3,] <- c(3E5, 0.15, "C")
+labelDF[4,] <- c(0.11E5, 0.58, "D")
+labelDF <- labelDF %>%
+  mutate_each(funs(as.numeric), -cluster)
+
 clusterDF <- data_frame(xmin=numeric(), xmax=numeric(), ymin=numeric(), ymax=numeric(), cluster=character())
-clusterDF[1,] <- c(7.8E5, 8.2E5, 0, 0.75, "A")
-clusterDF[2,] <- c(7E5, 8E5, 0.88, 1, "B")
-clusterDF[3,] <- c(9.9E5, 9.95E5,0.45, 1, "C")
-clusterDF[4,] <- c(9.97E5, 1.01E6,0.9, 1, "D")
+clusterDF[1,] <- c(1.9E5, 2.1E5, 0.85, 1, "A")
+clusterDF[2,] <- c(0.5E5, 2E5, 0.95, 1.05, "B")
+clusterDF[3,] <- c(2E5, 3.3E5,0, 0.1, "C")
+clusterDF[4,] <- c(-500, 0.15E5,0, 0.55, "D")
 clusterDF <- clusterDF %>%
   mutate_each(funs(as.numeric), -cluster)
 
-labelDF <- data_frame(x =  numeric(), y = numeric(), cluster = character())
-labelDF[1,] <- c(7.7E5, 0.1, "A")
-labelDF[2,] <- c(7E5, 0.85, "B")
-labelDF[3,] <- c(9.8E5, 0.5, "C")
-labelDF[4,] <- c(10.1E5, 0.95, "D")
-labelDF <- labelDF %>%
-  mutate_each(funs(as.numeric), -cluster)
-  
-fullDF <- fullDF %>%
-  mutate(cluster = NA) %>%
-  mutate(cluster =  ifelse(popObj >= 7.8E5 & popObj <= 8.2E5 & occupiedObj <= 0.75,
-                     "A",  cluster)) %>%
-  mutate(cluster = ifelse(popObj >= 7E5 & popObj <= 8E5 & occupiedObj >= 0.88 & occupiedObj <= 1,
-                    "B", cluster)) %>%
-  mutate(cluster = ifelse(popObj >= 9.9E5 & popObj <= 9.95E6 & occupiedObj >= 0.45 & occupiedObj <= 1,
-                    "C", cluster)) %>%
-  mutate(cluster = ifelse(popObj >= 9.97E5 & popObj <= 1E6 & occupiedObj >= 0.9 & occupiedObj <= 1,
-                    "D", cluster))
+
+longDF <- corrFullDF %>%
+  mutate(A = ifelse(popObj >= 1.9E5 & popObj <= 2.1E5 & occupiedObj >= 0.85 & occupiedObj <= 1, TRUE, FALSE)) %>%
+  mutate(B = ifelse(popObj >= 0.5E5 & popObj <= 2E5 & occupiedObj >= 0.95 & occupiedObj <= 1.05, TRUE, FALSE)) %>%
+  mutate(C = ifelse(popObj >= 2E5 & popObj <= 3.3E5 & occupiedObj >= 0 & occupiedObj <= 0.1, TRUE, FALSE)) %>%
+  mutate(D = ifelse(popObj >= -500 & popObj <= 0.15E5 & occupiedObj >= 0 & occupiedObj <= 0.55, TRUE, FALSE)) %>%
+  gather(key = Cluster, value = bob, A:D) %>%
+  filter(bob) %>%
+  select(-bob) %>%
+  mutate(Cluster = factor(Cluster))
 
 ```
 
@@ -141,13 +145,13 @@ plot4_2 <- ggplot() +
   geom_label(data = labelDF,
              aes(x = x, y =  y, label = cluster, fill = cluster, stroke = cluster),
              colour = "black", fontface = "bold", size=3,  alpha = 0.6) +
-  geom_point(data = fullDF, aes(x = popObj, y = occupiedObj), size = 0.1, alpha = 1) +
+  geom_point(data = corrFullDF, aes(x = popObj, y = occupiedObj), size = 0.1, alpha = 1) +
   guides(fill = FALSE, label = FALSE) +
-  scale_x_continuous(name = "Taille de la population") +
+  scale_x_continuous(name = "Taille de la population", limits = c(-1000, 350E3)) +
   scale_y_continuous(name = "Part de l'espace occupé", labels = scales::percent) +
   theme(strip.text = element_text(size = 4)) +
   theme(axis.text=element_text(size=4)) +
-  theme(axis.title=element_text(size=5)) + 
+  theme(axis.title=element_text(size=5)) +
   theme(plot.title=element_text(size =16,face="bold", hjust = -0.09,margin=margin(b=-15))) +
   ggtitle("(2)")
 
@@ -156,14 +160,14 @@ plot(plot4_2)
 ```
 
 ```{r plot4_3}
-tidyDF <- fullDF %>%
+tidyDF <- longDF %>%
   gather(key = Param, value = Value, probaMove:probaDeathByOvercrowding) %>%
   mutate(Param = ifelse(Param == "probaDeathByOvercrowding", "Proba. de mort\npar suffocation", Param)) %>%
   mutate(Param = ifelse(Param == "probaMove", "Proba. de\ndéplacement", Param)) %>%
   mutate(Param = ifelse(Param == "probaBirth", "Proba. de\nnaissance", Param)) %>%
   mutate(Param = ifelse(Param == "probaDeath", "Proba. de\nmort", Param))
 
-plot4_3 <- ggplot(data = tidyDF, aes(cluster, Value,  fill = cluster)) +
+plot4_3 <- ggplot(data = tidyDF, aes(Cluster, Value,  fill = Cluster)) +
   geom_violin(alpha = 0.7) +
   facet_grid(.~Param, scale = "free", space="free") +
   guides(fill=FALSE) +

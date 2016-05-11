@@ -161,15 +161,18 @@ plot(plot4_2)
 
 ```{r plot4_3}
 tidyDF <- longDF %>%
-  gather(key = Param, value = Value, probaMove:probaDeathByOvercrowding) %>%
+  rename(`Génération` = `evolution$generation`) %>%
+  mutate(`Génération` = (`Génération` / max(`Génération`))) %>%
+  gather(key = Param, value = Value, probaMove:probaDeathByOvercrowding, `Génération`) %>%
   mutate(Param = ifelse(Param == "probaDeathByOvercrowding", "Proba. de mort\npar suffocation", Param)) %>%
   mutate(Param = ifelse(Param == "probaMove", "Proba. de\ndéplacement", Param)) %>%
   mutate(Param = ifelse(Param == "probaBirth", "Proba. de\nnaissance", Param)) %>%
-  mutate(Param = ifelse(Param == "probaDeath", "Proba. de\nmort", Param))
+  mutate(Param = ifelse(Param == "probaDeath", "Proba. de\nmort", Param)) %>%
+  mutate(Param = factor(Param, levels=c("Proba. de\ndéplacement", "Proba. de\nmort", "Proba. de mort\npar suffocation", "Proba. de\nnaissance", "Génération")))
 
 plot4_3 <- ggplot(data = tidyDF, aes(Cluster, Value,  fill = Cluster)) +
   geom_violin(alpha = 0.7) +
-  facet_grid(.~Param, scale = "free", space="free") +
+  facet_grid(.~Param, scale = "free_y", space="free") +
   guides(fill=FALSE) +
   scale_x_discrete(name = "Classe") +
   scale_y_continuous(name = "Valeur de\nparamètre") +

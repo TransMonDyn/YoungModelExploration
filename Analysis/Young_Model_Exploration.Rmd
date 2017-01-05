@@ -28,20 +28,34 @@ opts_knit$set(width=75)
 ```
 
 ```{r load packages}
+source("ggplot2_formatter.R")
 library(readr)
+options("readr.num_columns" = 0)
 library(dplyr)
-library(GGally)
+#library(GGally)
 library(tidyr)
 library(ggplot2)
 library(ggthemes)
 library(gridExtra)
+
 ```
 
-```{r load data}
+```{r load data, cache = TRUE, echo = FALSE}
 resultsDF <- read_csv("../SimOutputs/plan_complet_result.csv")
 ```
 
-```{r summary}
+```{r plot_theming}
+theme_tmd <- function(){
+  tmd <- theme(axis.text=element_text(size=6),
+               axis.title=element_text(size=8),
+               strip.text = element_text(size = 8),
+               plot.title=element_text(size =16,face="bold", hjust = -0.09,margin=margin(b=-15))
+               )
+}
+
+```
+
+```{r summary, echo = FALSE}
 summaryDF <- resultsDF %>%
   select(-(seed:probaDeathByOvercrowding))
 
@@ -49,10 +63,10 @@ summaryDF <- resultsDF %>%
   mutate(Stat = row.names(.)) %>%
   select(Stat, initialPopulation:thistime) %>%
   tbl_df()
-kable(summaryDF)
+#kable(summaryDF)
 ```
 
-```{r scattermatrix}
+```{r scattermatrix, eval = TRUE}
 meanDF <- resultsDF %>%
   group_by(probaMove, probaBirth, probaDeath, probaDeathByOvercrowding) %>%
   summarise_each(funs(mean), initialPopulation:thistime) %>%
@@ -66,37 +80,33 @@ plotDF <- resultsDF %>%
          pop = initialPopulation)
 
 
-abc <- ggplot(meanDF, aes(x = population, occupiedWorld)) +
-  geom_point(alpha = 0.2, size=0.2) +
-  facet_grid(mv + dth ~ bth + dth, labeller = labeller(.rows = label_both, .cols = label_both))
-plot(abc)
+# abc <- ggplot(meanDF, aes(x = population, occupiedWorld)) +
+#   geom_point(alpha = 0.2, size=0.2) +
+#   facet_grid(mv + dth ~ bth + dth, labeller = labeller(.rows = label_both, .cols = label_both))
+# plot(abc)
 ```
 
-```{r plot4_1}
-
-
+```{r prepa plot4_1, cache = TRUE, eccho = FALSE}
 plot1DF <- plotDF %>%
   filter(dth != 0.66, mv ==1) %>%
   rename(`Proba. de mort` = dth) %>%
   rename(`Proba. de déplacement` = mv)
+```
 
-
+```{r plot4_1, echo = FALSE}
 plot4_1 <-ggplot(plot1DF, aes(x = population, y = occupiedWorld)) +
   geom_point(alpha = 1, size=0.01) +
-  theme(axis.text=element_text(size=4)) +
-  theme(axis.title=element_text(size=5))+
-  scale_x_continuous(name = "Taille de la population") +
+  scale_x_continuous(name = "Taille de la population", labels = human_numbers) +
   scale_y_continuous(name = "Part de l'espace occupé",  labels = scales::percent) +
   facet_grid(`Proba. de déplacement`~`Proba. de mort`,
              labeller = labeller(.rows = label_both, .cols = label_both)) +
-  theme(strip.text = element_text(size = 4)) +
-  theme(plot.title=element_text(size =16,face="bold", hjust = -0.09,margin=margin(b=-15))) +
+  theme_tmd() +
   ggtitle("(1)")
 
-plot(plot4_1)
+#plot(plot4_1)
 ```
 
-```{r prepa plot4_2}
+```{r prepa plot4_2, cache = TRUE, echo = FALSE}
 generations_list <- list.files("../SimOutputs/GenAlgo/", pattern = "*.csv")
 fullDF <- data_frame()
 for (currentGen in generations_list){
@@ -141,25 +151,27 @@ longDF <- corrFullDF %>%
 
 plot4_2 <- ggplot() +
     geom_rect(data = clusterDF,
-              aes(xmin = xmin, xmax =  xmax, ymin= ymin, ymax = ymax,fill = cluster), alpha = 0.4) +
+              aes(xmin = xmin,
+                  xmax =  xmax,
+                  ymin= ymin,
+                  ymax = ymax,
+                  fill = cluster),
+              alpha = 0.4) +
   geom_label(data = labelDF,
              aes(x = x, y =  y, label = cluster, fill = cluster, stroke = cluster),
              colour = "black", fontface = "bold", size=3,  alpha = 0.6) +
   geom_point(data = corrFullDF, aes(x = popObj, y = occupiedObj), size = 0.1, alpha = 1) +
   guides(fill = FALSE, label = FALSE) +
-  scale_x_continuous(name = "Taille de la population", limits = c(-1000, 350E3)) +
+  scale_x_continuous(name = "Taille de la population", limits = c(-1000, 350E3), labels = human_numbers) +
   scale_y_continuous(name = "Part de l'espace occupé", labels = scales::percent) +
-  theme(strip.text = element_text(size = 4)) +
-  theme(axis.text=element_text(size=4)) +
-  theme(axis.title=element_text(size=5)) +
-  theme(plot.title=element_text(size =16,face="bold", hjust = -0.09,margin=margin(b=-15))) +
+  theme_tmd() +
   ggtitle("(2)")
 
-plot(plot4_2)
+#plot(plot4_2)
 
 ```
 
-```{r plot4_3}
+```{r prepa plot4_3, cache = TRUE}
 tidyDF <- longDF %>%
   rename(`Génération` = `evolution$generation`) %>%
   mutate(`Génération` = (`Génération` / max(`Génération`))) %>%
@@ -168,28 +180,30 @@ tidyDF <- longDF %>%
   mutate(Param = ifelse(Param == "probaMove", "Proba. de\ndéplacement", Param)) %>%
   mutate(Param = ifelse(Param == "probaBirth", "Proba. de\nnaissance", Param)) %>%
   mutate(Param = ifelse(Param == "probaDeath", "Proba. de\nmort", Param)) %>%
-  mutate(Param = factor(Param, levels=c("Proba. de\ndéplacement", "Proba. de\nmort", "Proba. de mort\npar suffocation", "Proba. de\nnaissance", "Génération")))
+  mutate(Param = factor(Param, levels=c("Proba. de\ndéplacement", "Proba. de\nmort", "Proba. de mort\npar suffocation", "Proba. de\nnaissance", "Génération"))) %>%
+  filter(Param != "Génération")
+```
 
+```{r plot4_3}
 plot4_3 <- ggplot(data = tidyDF, aes(Cluster, Value,  fill = Cluster)) +
   geom_violin(alpha = 0.7) +
   facet_grid(.~Param, scale = "free_y", space="free") +
   guides(fill=FALSE) +
   scale_x_discrete(name = "Classe") +
   scale_y_continuous(name = "Valeur de\nparamètre") +
-  theme(strip.text = element_text(size = 4)) +
-  theme(axis.text=element_text(size=4)) +
-  theme(axis.title=element_text(size=5)) +
-  theme(plot.title=element_text(size =16,face="bold", hjust = -0.09,margin=margin(b=-15))) +
+  theme_tmd() +
   ggtitle("(3)")
 
-plot(plot4_3)
+#plot(plot4_3)
 ```
 
-```{r allPlots}
+```{r allPlots print, fig.width=5.31, fig.height=6}
 fig4 <- arrangeGrob(plot4_1, plot4_2, plot4_3, ncol = 1)
+#plot(fig4)
+```
+
+```{r allPlots save, cache=TRUE }
 ggsave(plot = fig4, filename = "figure4.pdf", width = 5.31, height = 6)
 ggsave(plot = fig4, filename = "figure4.png", width = 5.31, height = 6,  dpi = 300)
 ggsave(plot = fig4, filename = "figure4.tiff", width = 5.31, height = 6,  dpi = 300)
-
-plot(fig4)
 ```

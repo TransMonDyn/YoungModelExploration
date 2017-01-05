@@ -1,197 +1,113 @@
-patches-own
-[
+
+
+
+patches-own [
 population
 density-around
-carrying-capacity
-distance-from-start
-patch-laplacian
+
 ]
-
-breed [settlements settlement]
-
-globals [
-  average-distance-from-start
-  virtual-time
-]
-
-to setup-patches
-ask patches
+turtles-own
 [
-set carrying-capacity initial-carrying-capacity
-set distance-from-start sqrt((pxcor - min-pxcor) ^ 2 + (pycor - min-pycor) ^ 2)
+  Young-turtle-population
+  Logistic-turtle-population
 ]
-color-patches-young
-end
 
-to color-patches-FS
-let temp 1; max [population] of patches
-if temp > 0
-[ask patches
-  [
-    set pcolor 40 + population / 9; scale-color  yellow population 0 temp
-  ]
-]
-end
-
-to color-patches-Young
-let temp max [population] of patches
-if temp > 0
-[ask patches
-  [
-    set pcolor scale-color  green population 0 temp
-  ]
-]
-end
-
-
-
-
-;**********************************
-;**********************************
-;      FISHER-SKELLAM Model
-;**********************************
-;**********************************
-
-to setup-fisherskellam
-ca
-reset-ticks
-
-setup-patches
-ask patch 0 0
+breed
 [
-set population initial-population
+ Young-Turtles  Young-Turtle
 ]
-end
 
-to go-fisherskellam
-fisherskellam-step
-ifelse sum [population] of patches > 0 [
-set average-distance-from-start sum [population * distance-from-start] of patches / sum [population] of patches]
+breed
 [
-set average-distance-from-start 0
-
+ Logistic-Turtles  Logistic-Turtle
 ]
-set virtual-time virtual-time + 1
-if virtual-time mod 50 = 0 [tick]
-end
 
 
-to fisherskellam-step
-  ;to make sure the process is synchronised (and avoid dynamic updating of population patch values during one iteration,
-  ;we first compute the laplacian patch value based on current population values
-  ask patches
-  [
-    set patch-laplacian laplacian
-  ]
-  ; we then update population values
-  ask patches
-  [
-    set population max list 0  (population + population-diffusion * patch-laplacian + population-growth  * population * (1 - population / carrying-capacity))
-  ]
-  color-patches-FS
-end
-
-to-report laplacian
-  report sum [population] of neighbors4 - count neighbors4 * population
-end
-
-
-
-;**********************************
-;**********************************
-;            YOUNG Model
-;**********************************
-;**********************************
-
-
-to setup-young
-   ca
-
+to setup
+  ca
   reset-ticks
- setup-patches
- create-settlements initial-population
- [
-   setxy 0 0
-   set shape "person"
- ]
+  ask patches
+  [set pcolor 7]
+
+
+
+    create-Logistic-Turtles 1
+  [
+    setxy 0 0
+    set color blue
+    set shape "circle"
+    set Logistic-turtle-population Initial_Population
+  ]
+  create-Young-Turtles 1
+  [
+    setxy 0 0
+    set color red
+    set shape "circle"
+    set Young-turtle-population Initial_Population
+  ]
+
+  set-transparency
+  resize-turtles
 end
 
-to go-young
-  ask turtles [set hidden? not display-turtles?]
-young-step
-ifelse sum [population] of patches > 0 [
-set average-distance-from-start sum [population * distance-from-start] of patches / sum [population] of patches]
-[
-set average-distance-from-start 0
 
+to go
+  Run-LogisticGrowth
+  Run-YoungModel
+  resize-turtles
+  tick
+end
+
+to Run-LogisticGrowth
+  ask Logistic-Turtles
+  [
+    set Logistic-turtle-population Logistic-turtle-population + P_Birth  * Logistic-turtle-population * (1 - Logistic-turtle-population / k)
+  ]
+end
+
+to Run-YoungModel
+  ask Young-turtles
+  [
+    repeat Young-turtle-population
+  [
+ if random-float 1 < P_Birth [set Young-turtle-population Young-turtle-population + 1]
+  ]
+  repeat Young-turtle-Population
+  [
+ if random-float 1 < p_death [set Young-turtle-Population Young-turtle-Population - 1]
+  ]
+  repeat Young-turtle-Population
+  [
+ if random-float 1 < ((Young-turtle-Population - 1) * (1 / k)) [set Young-turtle-Population Young-turtle-Population - 1]
+  ]
 ]
-
-set virtual-time virtual-time + 1
-if virtual-time mod 50 = 0 [tick]
-end
-
-
-to young-step
-reproduce-settlement
-die-settlement
-die-by-overcrowding-settlement
-move-settlement
-ask patches [set population count settlements-here] ;non-cumulated population
-;ask patches [set population population + count settlements-here] ;cumulated population
-color-patches-young
 end
 
 
 
-to reproduce-settlement
-  ask settlements
+to resize-turtles
+   ask logistic-turtles [set size 0.01 + log (1 + logistic-turtle-Population) 2]
+  ask young-turtles [set size 0.01 + log (1 + Young-turtle-Population) 2]
+
+end
+
+to set-transparency
+  ask logistic-turtles
   [
-    if random-float 1 < proba-birth [
-      hatch 1 [
-      ]
-    ]
+  ifelse is-list? color
+  [ set color lput 90 sublist color 0 3 ]
+  [ set color lput 90 extract-rgb color ]
   ]
-end
-
-to die-settlement
-    ask settlements
-    [
-      if random-float 1 < proba-death [
-        die
-      ]
-    ]
-end
-
-to die-by-overcrowding-settlement
-  ask settlements
-  [
-    if any? other settlements-here
-      [
-        if random-float 1 < (count settlements-here - 1) * proba-death-by-overcrowding
-        [die]
-      ]
-  ]
-end
-
-
-to move-settlement
-    ask settlements
-    [
-    if random-float 1 < proba-move
-    [
-      move-to one-of neighbors4
-    ]
-    ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-6
-53
-443
-511
--1
--1
-7.0
+187
+129
+432
+335
+10
+10
+8.333333333333334
 1
 10
 1
@@ -201,40 +117,23 @@ GRAPHICS-WINDOW
 0
 0
 1
-0
-60
-0
-60
-0
-0
+-10
+10
+-10
+10
+1
+1
 1
 ticks
-100.0
+30.0
 
 BUTTON
-452
-54
-613
-87
-Setup FisherSkellam
-ca\nsetup-fisherskellam
+272
+33
+354
+66
 NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-453
-89
-596
-122
-Go Fisherskellam
-go-fisherskellam
+go
 T
 1
 T
@@ -246,293 +145,142 @@ NIL
 1
 
 MONITOR
-547
-280
-696
-325
-Cumulated Population
-sum [population] of patches
-0
+4
+208
+135
+253
+Population
+sum [logistic-turtle-Population] of logistic-turtles
+2
 1
 11
 
-SLIDER
-665
-52
-869
-85
-Initial-population
-Initial-population
+BUTTON
+187
+33
+270
+66
+Setup
+setup
+NIL
 1
-100
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+PLOT
+389
 10
-1
-1
+749
+335
+Population
 NIL
-HORIZONTAL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"Young" 1.0 0 -2139308 true "" "if sum [young-turtle-Population] of young-turtles > 0\n[ plot sum [young-turtle-Population] of young-turtles ]"
+"Logistic" 1.0 0 -13791810 true "" "if not Plot-Only-Young? and sum [logistic-turtle-Population] of logistic-turtles > 0\n [ plot sum [logistic-turtle-Population] of logistic-turtles]"
 
-SLIDER
-452
-209
-655
-242
-population-diffusion
-population-diffusion
+INPUTBOX
+3
+10
+158
+70
+Initial_Population
+1000
+1
 0
-0.2
-0.2
-0.001
-1
-NIL
-HORIZONTAL
+Number
 
-SLIDER
-452
-173
-655
-206
-population-growth
-population-growth
-0
-0.1
-0.1585
-0.0001
-1
-NIL
-HORIZONTAL
-
-SLIDER
-905
-166
-1150
-199
-proba-birth
-proba-birth
-0
-1
-0.35
-0.05
-1
-NIL
-HORIZONTAL
-
-SLIDER
-905
+INPUTBOX
+4
+142
+159
 202
-1150
-235
-proba-death
-proba-death
+K
+100000
+1
 0
-1
-0.05
-0.05
-1
-NIL
-HORIZONTAL
+Number
 
 MONITOR
-754
-280
-908
-325
-Number of Settlements
-count settlements
+5
+258
+135
+303
+NB Agents
+sum [young-turtle-Population] of young-turtles
 17
 1
 11
 
-SLIDER
-452
-137
-655
-170
-initial-carrying-capacity
-initial-carrying-capacity
-1
-100
-90
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-904
-239
-1150
-272
-proba-death-by-overcrowding
-proba-death-by-overcrowding
-0
-1
-0.15
-0.05
-1
-NIL
-HORIZONTAL
-
-SLIDER
-905
-130
-1150
-163
-proba-move
-proba-move
-0
-1
-0.3
-0.05
-1
-NIL
-HORIZONTAL
-
-BUTTON
-902
-51
-1012
-84
-Setup Young
-Ca\nsetup-young
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-904
-87
-997
-120
-Go Young
-go-young
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-PLOT
-446
-325
-696
-511
-Cumulated Population
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"Population" 1.0 0 -2674135 true "" "plot sum [population] of patches"
-
-PLOT
-696
-325
-942
-511
-Number of Settlements
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"Settlements (Young)" 1.0 0 -13840069 true "" "plot count settlements"
-
-TEXTBOX
-774
-116
-789
-258
-I\nI\nI\nI\nI\nI\nI\nI\nI\nI\nI\nI\nI\nI\nI
-11
-0.0
-1
-
 SWITCH
-999
-87
-1149
-120
-display-turtles?
-display-turtles?
+5
+309
+176
+342
+Plot-Only-Young?
+Plot-Only-Young?
 1
 1
 -1000
 
-PLOT
-942
-325
-1162
-511
-Average distance from start
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"Distance (FS or Young)" 1.0 0 -13791810 true "" "plot average-distance-from-start"
-
-MONITOR
-989
-280
-1162
-325
-Average distance from start
-average-distance-from-start
+SLIDER
+4
+72
+176
+105
+P_Birth
+P_Birth
+0
 1
+0.85
+0.05
 1
-11
+NIL
+HORIZONTAL
 
-TEXTBOX
-664
+SLIDER
+4
+106
+176
 139
-682
-167
-(K)
+P_Death
+P_Death
+0
+1
+0
+0.05
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+764
+53
+965
+193
+***************************\nCAUTION\n\nHere, K corresponds to:\n- the carrying capacity in the logistic model\n- the probability to die by overcrowding in the Young Model (then 1/K is taken)\n***************************
 11
 0.0
 1
 
 TEXTBOX
-664
-175
-707
-203
-(Alpha)
-11
-0.0
-1
-
-TEXTBOX
-664
-208
-686
-236
-(D)
+196
+108
+377
+136
+Circle size = c + ln(Population)
 11
 0.0
 1
@@ -540,53 +288,37 @@ TEXTBOX
 @#$#@#$#@
 ## WHAT IS IT?
 
-This model proposes an implementation of two competing models of human population dispersal processes : the basic Fisher-Skellam (also called KPP) reaction-diffusion model and the Young Model.
+This model compares an approximation of the Young Model with a logistic macroscopic one.
+The young model is reduced to a single point and exploits directly the stock population of the node.
+
+The idea of running such comparison comes from the statement written in Young's paper, p. 140, on the equivalence of the two formulations.
 
 
-References :
-
-James Steele, Human Dispersals: Mathematical Models and the Archaeological Record, Human Biology, April–June 2009, v. 81, nos. 2–3, pp. 121–140.
-
+Reference :
 David A. Young. A New Space-Time Computer Simulation Method for Human Migration
 American Anthropologist, Vol. 104, No. 1 (Mar., 2002), pp. 138-158
 (download from http://www.jstor.org/stable/683767?seq=1#page_scan_tab_contents)
 
 
-## FISCHER-SKELLAM MODEL
+## HOW IT WORKS
 
+In the young model, at each time step each localised agents has a given probability to :
+- give birth ("P_birth")
+- die ("P_death")
+- die due to overcrowding ("k")
 
-The kpp model has two components: Population-growth, limited by initial-carrying-capacity corresponds to the reaction term while population-diffusion corresponds to the diffusion term.
-
-Therefore the three parameters are defined as:
-
-- initial-carrying-capacity
-- population-growth
-- population-diffusion
-
-
-
-## YOUNG MODEL
-
-
-In the Young model, at each time step each localised agents has a given probability to :
-
-- give birth ("proba-birth")
-- die ("proba-death")
-- die due to overcrowding ("proba-death-by-overcrowding")
-- move ("proba-move").
-
+Note that the K parameter corresponds to:
+- the carrying capacity in the logistic model
+- the probability to die by overcrowding in the Young Model (then 1/K is taken)
 
 
 ## HOW TO USE IT
 
-Specify "Initial-Population", then run Fisher-Skellam (left side) of Young model (right side).
-
-Ouput indicators are cumulated population through simulation for both models plus the current number of settlements.
+Define "population", and the three probabilities defined previously, then setup and run the model.
 
 ## THINGS TO NOTICE
 
-The basic Fisher-Skellam model can be extended in several ways (cf James Steele).
-
+Desactivating the "Plot-Only-Young?" switch allows focusing in a more detailed way on the population estimates computed from Young Model.
 
 ## CREDITS AND REFERENCES
 
@@ -880,41 +612,6 @@ NetLogo 5.2.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
-<experiments>
-  <experiment name="experiment FS" repetitions="1" runMetricsEveryStep="true">
-    <setup>setup-fischerskellam</setup>
-    <go>go-fischerskellam</go>
-    <timeLimit steps="50"/>
-    <metric>sum [population] of patches</metric>
-    <metric>average-distance-from-start</metric>
-    <steppedValueSet variable="initial-carrying-capacity" first="10" step="20" last="90"/>
-    <steppedValueSet variable="population-growth" first="0.025" step="0.025" last="0.15"/>
-    <steppedValueSet variable="population-diffusion" first="0.025" step="0.025" last="0.15"/>
-    <enumeratedValueSet variable="Initial-population">
-      <value value="1"/>
-      <value value="10"/>
-    </enumeratedValueSet>
-  </experiment>
-  <experiment name="experiment Young" repetitions="3" runMetricsEveryStep="true">
-    <setup>setup-young</setup>
-    <go>go-young</go>
-    <timeLimit steps="50"/>
-    <exitCondition>count settlements &gt; 20000</exitCondition>
-    <metric>sum [population] of patches</metric>
-    <metric>average-distance-from-start</metric>
-    <steppedValueSet variable="proba-death-by-overcrowding" first="0.05" step="0.05" last="0.3"/>
-    <enumeratedValueSet variable="display-turtles?">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="proba-death" first="0.0125" step="0.0125" last="0.1"/>
-    <steppedValueSet variable="proba-move" first="0.1" step="0.1" last="0.5"/>
-    <steppedValueSet variable="proba-birth" first="0.05" step="0.05" last="0.3"/>
-    <enumeratedValueSet variable="initial-population">
-      <value value="1"/>
-      <value value="10"/>
-    </enumeratedValueSet>
-  </experiment>
-</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default

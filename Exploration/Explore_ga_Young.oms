@@ -29,7 +29,7 @@ val cmds =
 
 // NetLogo task
 val youngTask =
-  NetLogo5Task("/iscpif/users/rey/YOUNG/YoungModelExploration/M1_FS-Young.nlogo", cmds, seed = seed) set (
+  NetLogo5Task("M1_FS-Young_exploration.nlogo", cmds, seed = seed) set (
     outputs += (seed, probaMove, probaBirth, probaDeath, probaDeathByOvercrowding, initialPopulation),
     netLogoInputs += (probaMove, "proba-move"),
     netLogoInputs += (probaBirth, "proba-birth"),

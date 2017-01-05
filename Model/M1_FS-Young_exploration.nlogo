@@ -1,34 +1,34 @@
+globals[
+  populationWorld
+  nbSettlementsWorld
+  occupiedWorld
+  timeWorld
+]
+
 patches-own
 [
 population
 density-around
 carrying-capacity
-distance-from-start
-patch-laplacian
 ]
 
 breed [settlements settlement]
 
-globals [
-  average-distance-from-start
-  virtual-time
-]
 
 to setup-patches
 ask patches
 [
 set carrying-capacity initial-carrying-capacity
-set distance-from-start sqrt((pxcor - min-pxcor) ^ 2 + (pycor - min-pycor) ^ 2)
 ]
 color-patches-young
 end
 
 to color-patches-FS
-let temp 1; max [population] of patches
+let temp max [population] of patches
 if temp > 0
 [ask patches
   [
-    set pcolor 40 + population / 9; scale-color  yellow population 0 temp
+    set pcolor 40.5 + 9 * population / temp
   ]
 ]
 end
@@ -38,11 +38,10 @@ let temp max [population] of patches
 if temp > 0
 [ask patches
   [
-    set pcolor scale-color  green population 0 temp
+    set pcolor 60.5 + 9 * population / temp
   ]
 ]
 end
-
 
 
 
@@ -53,9 +52,8 @@ end
 ;**********************************
 
 to setup-fisherskellam
-ca
-reset-ticks
 
+reset-ticks
 setup-patches
 ask patch 0 0
 [
@@ -65,34 +63,20 @@ end
 
 to go-fisherskellam
 fisherskellam-step
-ifelse sum [population] of patches > 0 [
-set average-distance-from-start sum [population * distance-from-start] of patches / sum [population] of patches]
-[
-set average-distance-from-start 0
-
-]
-set virtual-time virtual-time + 1
-if virtual-time mod 50 = 0 [tick]
+tick
 end
 
 
 to fisherskellam-step
-  ;to make sure the process is synchronised (and avoid dynamic updating of population patch values during one iteration,
-  ;we first compute the laplacian patch value based on current population values
-  ask patches
-  [
-    set patch-laplacian laplacian
-  ]
-  ; we then update population values
-  ask patches
-  [
-    set population max list 0  (population + population-diffusion * patch-laplacian + population-growth  * population * (1 - population / carrying-capacity))
-  ]
-  color-patches-FS
+ask patches
+[
+set population population + population-diffusion * laplacian + population-growth  * population * (1 - population / carrying-capacity)
+]
+color-patches-FS
 end
 
 to-report laplacian
-  report sum [population] of neighbors4 - count neighbors4 * population
+  report sum [population] of neighbors4 - 4 * population
 end
 
 
@@ -103,41 +87,48 @@ end
 ;**********************************
 ;**********************************
 
+to run-young-openmole
+  setup-young
+  reset-timer
+  while [
+    (timer < 20)
+    and (occupiedWorld < 0.99)
+    and (populationWorld < 200000)
+    ] [ go-young-openmole]
+end
 
 to setup-young
-   ca
-
   reset-ticks
- setup-patches
- create-settlements initial-population
+  setup-patches
+ create-settlements 1
  [
    setxy 0 0
    set shape "person"
  ]
 end
 
-to go-young
-  ask turtles [set hidden? not display-turtles?]
+to go-young-openmole
 young-step
-ifelse sum [population] of patches > 0 [
-set average-distance-from-start sum [population * distance-from-start] of patches / sum [population] of patches]
-[
-set average-distance-from-start 0
-
-]
-
-set virtual-time virtual-time + 1
-if virtual-time mod 50 = 0 [tick]
+set populationWorld sum [population] of patches
+set nbSettlementsWorld count settlements
+set occupiedWorld (count patches with [population > 0]) / (count patches)
+set timeWorld timer
+tick
 end
 
+
+to go-young
+young-step
+tick
+end
 
 to young-step
 reproduce-settlement
 die-settlement
 die-by-overcrowding-settlement
 move-settlement
-ask patches [set population count settlements-here] ;non-cumulated population
-;ask patches [set population population + count settlements-here] ;cumulated population
+ask patches
+[set population population + count settlements-here] ;cumulated population
 color-patches-young
 end
 
@@ -246,10 +237,10 @@ NIL
 1
 
 MONITOR
-547
-280
-696
-325
+751
+277
+900
+322
 Cumulated Population
 sum [population] of patches
 0
@@ -257,45 +248,45 @@ sum [population] of patches
 11
 
 SLIDER
-665
-52
-869
-85
+703
+40
+853
+73
 Initial-population
 Initial-population
 1
 100
-10
+100
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-452
-209
-655
-242
+455
+207
+658
+240
 population-diffusion
 population-diffusion
-0
-0.2
-0.2
+0.003
+0.3
+0.011
 0.001
 1
 NIL
 HORIZONTAL
 
 SLIDER
-452
-173
-655
-206
+455
+171
+658
+204
 population-growth
 population-growth
-0
-0.1
-0.1585
+0.0003
+0.05
+0.0357
 0.0001
 1
 NIL
@@ -310,7 +301,7 @@ proba-birth
 proba-birth
 0
 1
-0.35
+0.75
 0.05
 1
 NIL
@@ -325,17 +316,17 @@ proba-death
 proba-death
 0
 1
-0.05
+0
 0.05
 1
 NIL
 HORIZONTAL
 
 MONITOR
-754
-280
-908
-325
+1091
+277
+1245
+322
 Number of Settlements
 count settlements
 17
@@ -343,15 +334,15 @@ count settlements
 11
 
 SLIDER
-452
-137
-655
-170
+455
+135
+658
+168
 initial-carrying-capacity
 initial-carrying-capacity
 1
 100
-90
+43
 1
 1
 NIL
@@ -366,8 +357,8 @@ proba-death-by-overcrowding
 proba-death-by-overcrowding
 0
 1
-0.15
-0.05
+0.1
+0.1
 1
 NIL
 HORIZONTAL
@@ -381,7 +372,7 @@ proba-move
 proba-move
 0
 1
-0.3
+0.85
 0.05
 1
 NIL
@@ -422,10 +413,10 @@ NIL
 1
 
 PLOT
-446
-325
-696
-511
+445
+324
+901
+510
 Cumulated Population
 NIL
 NIL
@@ -434,16 +425,16 @@ NIL
 0.0
 10.0
 true
-false
+true
 "" ""
 PENS
-"Population" 1.0 0 -2674135 true "" "plot sum [population] of patches"
+"Population (FS or Young)" 1.0 0 -2674135 true "" "plot sum [population] of patches"
 
 PLOT
-696
-325
-942
-511
+904
+324
+1245
+510
 Number of Settlements
 NIL
 NIL
@@ -452,87 +443,17 @@ NIL
 0.0
 10.0
 true
-false
+true
 "" ""
 PENS
 "Settlements (Young)" 1.0 0 -13840069 true "" "plot count settlements"
 
 TEXTBOX
-774
-116
-789
-258
+784
+93
+799
+235
 I\nI\nI\nI\nI\nI\nI\nI\nI\nI\nI\nI\nI\nI\nI
-11
-0.0
-1
-
-SWITCH
-999
-87
-1149
-120
-display-turtles?
-display-turtles?
-1
-1
--1000
-
-PLOT
-942
-325
-1162
-511
-Average distance from start
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"Distance (FS or Young)" 1.0 0 -13791810 true "" "plot average-distance-from-start"
-
-MONITOR
-989
-280
-1162
-325
-Average distance from start
-average-distance-from-start
-1
-1
-11
-
-TEXTBOX
-664
-139
-682
-167
-(K)
-11
-0.0
-1
-
-TEXTBOX
-664
-175
-707
-203
-(Alpha)
-11
-0.0
-1
-
-TEXTBOX
-664
-208
-686
-236
-(D)
 11
 0.0
 1
@@ -552,7 +473,7 @@ American Anthropologist, Vol. 104, No. 1 (Mar., 2002), pp. 138-158
 (download from http://www.jstor.org/stable/683767?seq=1#page_scan_tab_contents)
 
 
-## FISCHER-SKELLAM MODEL
+## FISHER-SKELLAM MODEL
 
 
 The kpp model has two components: Population-growth, limited by initial-carrying-capacity corresponds to the reaction term while population-diffusion corresponds to the diffusion term.
@@ -876,45 +797,10 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 5.2.1
+NetLogo 5.2.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
-<experiments>
-  <experiment name="experiment FS" repetitions="1" runMetricsEveryStep="true">
-    <setup>setup-fischerskellam</setup>
-    <go>go-fischerskellam</go>
-    <timeLimit steps="50"/>
-    <metric>sum [population] of patches</metric>
-    <metric>average-distance-from-start</metric>
-    <steppedValueSet variable="initial-carrying-capacity" first="10" step="20" last="90"/>
-    <steppedValueSet variable="population-growth" first="0.025" step="0.025" last="0.15"/>
-    <steppedValueSet variable="population-diffusion" first="0.025" step="0.025" last="0.15"/>
-    <enumeratedValueSet variable="Initial-population">
-      <value value="1"/>
-      <value value="10"/>
-    </enumeratedValueSet>
-  </experiment>
-  <experiment name="experiment Young" repetitions="3" runMetricsEveryStep="true">
-    <setup>setup-young</setup>
-    <go>go-young</go>
-    <timeLimit steps="50"/>
-    <exitCondition>count settlements &gt; 20000</exitCondition>
-    <metric>sum [population] of patches</metric>
-    <metric>average-distance-from-start</metric>
-    <steppedValueSet variable="proba-death-by-overcrowding" first="0.05" step="0.05" last="0.3"/>
-    <enumeratedValueSet variable="display-turtles?">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="proba-death" first="0.0125" step="0.0125" last="0.1"/>
-    <steppedValueSet variable="proba-move" first="0.1" step="0.1" last="0.5"/>
-    <steppedValueSet variable="proba-birth" first="0.05" step="0.05" last="0.3"/>
-    <enumeratedValueSet variable="initial-population">
-      <value value="1"/>
-      <value value="10"/>
-    </enumeratedValueSet>
-  </experiment>
-</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default

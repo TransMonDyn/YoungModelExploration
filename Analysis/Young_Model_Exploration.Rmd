@@ -90,12 +90,16 @@ plotDF <- resultsDF %>%
 plot1DF <- plotDF %>%
   filter(dth != 0.66, mv ==1) %>%
   rename(`Proba. de mort` = dth) %>%
-  rename(`Proba. de déplacement` = mv)
+  rename(`Proba. de déplacement` = mv) %>%
+  mutate(bth = factor(bth),
+         dby = factor(dby))
+
+glimpse(plot1DF[,-1])
 ```
 
 ```{r plot4_1, echo = FALSE}
-plot4_1 <-ggplot(plot1DF, aes(x = population, y = occupiedWorld)) +
-  geom_point(alpha = 1, size=0.01) +
+plot4_1 <- ggplot(plot1DF, aes(x = population, y = occupiedWorld,  col = dby)) +
+  geom_point(alpha = 0.1, size=2,  position = position_jitter(width = 0, height = 0)) +
   scale_x_continuous(name = "Taille de la population", labels = human_numbers) +
   scale_y_continuous(name = "Part de l'espace occupé",  labels = scales::percent) +
   facet_grid(`Proba. de déplacement`~`Proba. de mort`,
@@ -103,7 +107,7 @@ plot4_1 <-ggplot(plot1DF, aes(x = population, y = occupiedWorld)) +
   theme_tmd() +
   ggtitle("(1)")
 
-#plot(plot4_1)
+plot(plot4_1)
 ```
 
 ```{r prepa plot4_2, cache = TRUE, echo = FALSE}
@@ -175,6 +179,8 @@ plot4_2 <- ggplot() +
 tidyDF <- longDF %>%
   rename(`Génération` = `evolution$generation`) %>%
   mutate(`Génération` = (`Génération` / max(`Génération`))) %>%
+  group_by(Cluster) %>%
+  mutate(nbSim = n()) %>%
   gather(key = Param, value = Value, probaMove:probaDeathByOvercrowding, `Génération`) %>%
   mutate(Param = ifelse(Param == "probaDeathByOvercrowding", "Proba. de mort\npar suffocation", Param)) %>%
   mutate(Param = ifelse(Param == "probaMove", "Proba. de\ndéplacement", Param)) %>%
@@ -186,15 +192,15 @@ tidyDF <- longDF %>%
 
 ```{r plot4_3}
 plot4_3 <- ggplot(data = tidyDF, aes(Cluster, Value,  fill = Cluster)) +
-  geom_violin(alpha = 0.7) +
-  facet_grid(.~Param, scale = "free_y", space="free") +
+  geom_violin(alpha = 0.7,  trim = TRUE, size = 0.1, scale = "width") +
+  facet_grid(.~Param) +
   guides(fill=FALSE) +
   scale_x_discrete(name = "Classe") +
   scale_y_continuous(name = "Valeur de\nparamètre") +
   theme_tmd() +
   ggtitle("(3)")
 
-#plot(plot4_3)
+plot(plot4_3)
 ```
 
 ```{r allPlots print, fig.width=5.31, fig.height=6}

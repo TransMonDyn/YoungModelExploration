@@ -27,7 +27,7 @@ opts_chunk$set(echo=FALSE,
 opts_knit$set(width=75)
 ```
 
-```{r load packages}
+```{r load packages, warning=FALSE}
 source("ggplot2_formatter.R")
 library(readr)
 options("readr.num_columns" = 0)
@@ -37,6 +37,7 @@ library(tidyr)
 library(ggplot2)
 library(ggthemes)
 library(gridExtra)
+library(viridis)
 
 ```
 
@@ -47,9 +48,16 @@ resultsDF <- read_csv("../SimOutputs/plan_complet_result.csv")
 ```{r plot_theming}
 theme_tmd <- function(){
   tmd <- theme(axis.text=element_text(size=6),
-               axis.title=element_text(size=8),
-               strip.text = element_text(size = 8),
-               plot.title=element_text(size =16,face="bold", hjust = -0.09,margin=margin(b=-15))
+               axis.title=element_text(size=7),
+               strip.text = element_text(size = 7),
+               plot.title=element_text(size =16,family = "Helvetica",face="bold",vjust = 1,hjust = -0.09,margin=margin(b=-15)),
+               legend.text = element_text(size = 7),
+               legend.title = element_text(size = 7),
+               legend.position="top",
+               legend.direction = "horizontal",
+               plot.margin = unit(x = c(0.25, 0.25, 0.25, 0.5), units = "cm"),
+               legend.box.spacing = unit(x = 0.25, units = "cm"),
+               legend.margin=margin(t = 0, r = 0, b = -0.2, l = 0,unit = "cm")
                )
 }
 
@@ -88,26 +96,29 @@ plotDF <- resultsDF %>%
 
 ```{r prepa plot4_1, cache = TRUE, eccho = FALSE}
 plot1DF <- plotDF %>%
-  filter(dth != 0.66, mv ==1) %>%
+  filter(dth == 0.33, dby %in% c(0,0.33, 0.66)) %>%
   rename(`Proba. de mort` = dth) %>%
-  rename(`Proba. de déplacement` = mv) %>%
+  rename(`Proba. de\ndéplacement` = mv) %>%
   mutate(bth = factor(bth),
-         dby = factor(dby))
+         dby = factor(dby)) %>%
+  rename(`Proba. de mort par suroccupation` = dby)
 
-glimpse(plot1DF[,-1])
+# glimpse(plot1DF[,-1])
 ```
 
 ```{r plot4_1, echo = FALSE}
-plot4_1 <- ggplot(plot1DF, aes(x = population, y = occupiedWorld,  col = dby)) +
-  geom_point(alpha = 0.1, size=2,  position = position_jitter(width = 0, height = 0)) +
+plot4_1 <- ggplot(plot1DF, aes(x = population, y = occupiedWorld,  col = `Proba. de mort par suroccupation`)) +
+  geom_point(alpha = 0.1, size=1.5, position = position_jitter()) +
+  #stat_ellipse(type = "norm") +
   scale_x_continuous(name = "Taille de la population", labels = human_numbers) +
   scale_y_continuous(name = "Part de l'espace occupé",  labels = scales::percent) +
-  facet_grid(`Proba. de déplacement`~`Proba. de mort`,
+  facet_grid(`Proba. de mort`~`Proba. de\ndéplacement`,
              labeller = labeller(.rows = label_both, .cols = label_both)) +
   theme_tmd() +
+  guides(colour = guide_legend(override.aes = list(alpha=1))) +
+  scale_colour_manual(values = c("#FF9700", "#2219B2", "#00AB6F")) +
   ggtitle("(1)")
-
-plot(plot4_1)
+#plot(plot4_1)
 ```
 
 ```{r prepa plot4_2, cache = TRUE, echo = FALSE}

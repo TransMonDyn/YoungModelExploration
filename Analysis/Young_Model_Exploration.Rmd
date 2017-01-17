@@ -193,11 +193,11 @@ tidyDF <- longDF %>%
   group_by(Cluster) %>%
   mutate(nbSim = n()) %>%
   gather(key = Param, value = Value, probaMove:probaDeathByOvercrowding, `Génération`) %>%
-  mutate(Param = ifelse(Param == "probaDeathByOvercrowding", "Proba. de mort\npar suffocation", Param)) %>%
+  mutate(Param = ifelse(Param == "probaDeathByOvercrowding", "Proba. de mort\npar suroccupation", Param)) %>%
   mutate(Param = ifelse(Param == "probaMove", "Proba. de\ndéplacement", Param)) %>%
   mutate(Param = ifelse(Param == "probaBirth", "Proba. de\nnaissance", Param)) %>%
   mutate(Param = ifelse(Param == "probaDeath", "Proba. de\nmort", Param)) %>%
-  mutate(Param = factor(Param, levels=c("Proba. de\ndéplacement", "Proba. de\nmort", "Proba. de mort\npar suffocation", "Proba. de\nnaissance", "Génération"))) %>%
+  mutate(Param = factor(Param, levels=c("Proba. de\ndéplacement", "Proba. de\nmort", "Proba. de mort\npar suroccupation", "Proba. de\nnaissance", "Génération"))) %>%
   filter(Param != "Génération")
 ```
 

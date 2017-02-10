@@ -47,10 +47,12 @@ resultsDF <- read_csv("../SimOutputs/plan_complet_result.csv")
 
 ```{r plot_theming}
 theme_tmd <- function(){
-  tmd <- theme(axis.text=element_text(size=6),
-               axis.title=element_text(size=7),
+  tmd <- theme(axis.text = element_text(size = 6),
+               axis.title = element_text(size = 7),
                strip.text = element_text(size = 7),
-               plot.title=element_text(size =16,family = "Helvetica",face="bold",vjust = 1,hjust = -0.09,margin=margin(b=-15)),
+               plot.title = element_text(size = 12,family = "Helvetica",face="bold",
+                                       vjust = 1, hjust = -0.12, 
+                                       margin = margin(b = -15)),
                legend.text = element_text(size = 7),
                legend.title = element_text(size = 7),
                legend.position="top",
@@ -59,6 +61,7 @@ theme_tmd <- function(){
                legend.box.spacing = unit(x = 0.25, units = "cm"),
                legend.margin=margin(t = 0, r = 0, b = -0.2, l = 0,unit = "cm")
                )
+  return(tmd)
 }
 
 ```
@@ -116,9 +119,10 @@ plot4_1 <- ggplot(plot1DF, aes(x = population, y = occupiedWorld,  col = `Proba.
              labeller = labeller(.rows = label_both, .cols = label_both)) +
   theme_tmd() +
   guides(colour = guide_legend(override.aes = list(alpha=1))) +
-  scale_colour_manual(values = c("#FF9700", "#2219B2", "#00AB6F")) +
+  scale_colour_manual(values = c("#FF9700", "#1d66af", "#00AB6F")) +
   ggtitle("(1)")
-#plot(plot4_1)
+
+plot(plot4_1)
 ```
 
 ```{r prepa plot4_2, cache = TRUE, echo = FALSE}
@@ -216,7 +220,7 @@ plot(plot4_3)
 
 ```{r allPlots print, fig.width=5.31, fig.height=6}
 fig4 <- arrangeGrob(plot4_1, plot4_2, plot4_3, ncol = 1)
-#plot(fig4)
+plot(fig4)
 ```
 
 ```{r allPlots save, cache=TRUE }
